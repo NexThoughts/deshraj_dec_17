@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'groovy'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
 
@@ -19,6 +20,8 @@ version = '1.0'
 
 
 dependencies {
+    compile "io.vertx:vertx-core:3.5.0"
+    compile "io.vertx:vertx-lang-groovy:3.5.0"
     compile group: 'io.vertx', name: 'vertx-web', version: '3.5.0'
     compile group: 'io.vertx', name: 'vertx-web-templ-freemarker', version: '3.5.0'
     compile group: 'com.github.rjeschke', name: 'txtmark', version: '0.13'
