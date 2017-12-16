@@ -1,6 +1,7 @@
 package com.verticles
 
 import com.VO.MailVO
+import com.com.util.ProjectUtil
 import io.vertx.core.Vertx
 import io.vertx.ext.mail.MailClient
 
@@ -12,11 +13,11 @@ class MailService {
     {
         Vertx vertx= Vertx.vertx()
         Map<String,String> config = [:]
-        config.hostname = "smtp.gmail.com"
-        config.port = 587
+        config.hostname = ProjectUtil.HOST_NAME
+        config.port = ProjectUtil.PORT
         config.starttls = "OPTIONAL"
-        config.username = ""
-        config.password = ""
+        config.username = ProjectUtil.USERNAME
+        config.password = ProjectUtil.PASSWORD
 
         println "---sendEmail--2--------" + config
 
