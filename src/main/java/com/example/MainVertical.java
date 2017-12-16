@@ -12,6 +12,7 @@ import io.vertx.ext.auth.jdbc.JDBCAuth;
 import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
+import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -27,78 +28,77 @@ import java.util.stream.Collectors;
  */
 public class MainVertical extends AbstractVerticle {
 
-    private static final String SQL_CREATE_PAGES_TABLE = "create table if not exists Pages (Id integer identity primary key,Name varchar(255) unique, Content clob)";
     private static final String MY_SQL_CREATE_PAGES_TABLE = "create table pages(id MEDIUMINT(5) AUTO_INCREMENT, name VARCHAR(20), content VARCHAR(200), PRIMARY KEY (id))";
-    private static final String SQL_GET_PAGE = "select Id, Content from Pages where Name = ?";
     private static final String MY_SQL_GET_PAGE = "select id, content from pages where name = ?";
-    private static final String SQL_CREATE_PAGE = "insert into Pages values (NULL, ?, ?)";
     private static final String MY_SQL_CREATE_PAGE = "insert into pages values (NULL, ?, ?)";
-    private static final String SQL_SAVE_PAGE = "update Pages set Content = ? where Id = ?";
     private static final String MY_SQL_SAVE_PAGE = "update pages set content = ? where id = ?";
-    private static final String SQL_ALL_PAGES = "select Name from Pages";
     private static final String MY_SQL_ALL_PAGES = "select name from pages";
-    private static final String SQL_DELETE_PAGE = "delete from Pages where Id = ?";
     private static final String MY_SQL_DELETE_PAGE = "delete from pages where id = ?";
+    private static final String MY_SQL_CREATE_TASK_TABLE = "create table task(id MEDIUMINT(5) AUTO_INCREMENT, name VARCHAR(20), description VARCHAR(200), dueDate VARCHAR(20), assigneeId MEDIUMINT(5), status VARCHAR(20), teamId MEDIUMINT(5), PRIMARY KEY (id))";
+    private static final String MY_SQL_CREATE_TEAM_TABLE = "create table team(id MEDIUMINT(5) AUTO_INCREMENT, name VARCHAR(20), adminId MEDIUMINT(5), PRIMARY KEY (id))";
+    private static final String MY_SQL_CREATE_TEAM_USER_MAPPING_TABLE = "create table teamusermapping(teamId MEDIUMINT(5), userId MEDIUMINT(5))";
+
 
     private JDBCClient dbClient;
     private JDBCAuth authProvider;
-
-//    private static final Logger LOGGER = LoggerFactory.getLogger(com.example.MainVertical.class);
-
+    private MongoClient mongoClient;
     private final FreeMarkerTemplateEngine templateEngine = FreeMarkerTemplateEngine.create();
 
     //    This is vertx future not JDK's future
     @Override
     public void start(Future<Void> startFuture) throws Exception {
-        Future<Void> steps = prepareMySqlDatabase().compose(v -> startHttpServer());
+        Future<Void> steps = prepareDatabase().compose(v -> startHttpServer());
         steps.setHandler(startFuture.completer());
     }
 
-    public void sendMail(){
-        MailConfig config = new MailConfig();
-        MailClient mailClient = MailClient.createShared(vertx, config, "exampleclient");
-    }
 
-    /*private Future<Void> prepareDatabase() {
-        Future<Void> future = Future.future();
-        System.out.println("====== value fo vertx = " + vertx);
-        System.out.println("====== value fo vertx = " + vertx.toString());
-        JDBCClient dbClient = null;
-        try {
-            dbClient = JDBCClient.createShared(
-                    vertx,
-                    new JsonObject()
-                            .put("url", "jdbc:hsqldb:file:db/wiki")
-                            .put("driver_class", "org.hsqldb.jdbcDriver")
-                            .put("max_pool_size", 30));
-        } catch (Exception e) {
-            System.out.println("===== There occurred an exception" + e);
-            e.printStackTrace();
-        }
-        dbClient.getConnection(ar -> {
-            if (ar.failed()) {
-                System.out.println("Could not open a database connection" + ar.cause());
-                future.fail(ar.cause());
-            } else {
-                SQLConnection connection = ar.result();
-                connection.execute(SQL_CREATE_PAGES_TABLE, create -> {
-                    connection.close();
-                    if (create.failed()) {
-                        System.out.println("Database preparation error" + create.cause());
-                        future.fail(create.cause());
-                    } else {
-                        future.complete();
-                    }
-                });
-            }
-        });
-        return future;
-    }*/
 
-    private Future<Void> prepareMySqlDatabase() {
+    private Future<Void> prepareDatabase() {
         Future<Void> future = Future.future();
-        System.out.println("====== value fo vertx = " + vertx);
-        System.out.println("====== value fo vertx = " + vertx.toString());
+//        try {
+//            mongoClient = MongoClient.createShared(
+//                    vertx,
+//                    new JsonObject()
+//                            .put("host", "localhost")
+//                            .put("db_name", "demo_vertx")
+//                            .put("max_pool_size", 30)
+//            );
+//        } catch (Exception e) {
+//            System.out.println("===== There occurred an exception" + e);
+//            e.printStackTrace();
+//        }
+//        mongoClient.dropCollection("task", res -> {
+//            if (res.succeeded()) {
+//                System.out.println("===== Dropped existing collection task successfully ========");
+//            } else {
+//                System.out.println("====== Couldn't delete existing collection task ========");
+//            }
+//        });
+//        mongoClient.createCollection("task", res -> {
+//            if (res.succeeded()) {
+//                System.out.println("=== Successfully created task collection ====");
+//            } else {
+//                System.out.println("==== Unable to create task collection =====");
+//                res.cause().printStackTrace();
+//                future.fail(res.cause());
+//            }
+//        });
+//        mongoClient.dropCollection("team", res -> {
+//            if (res.succeeded()) {
+//                System.out.println("===== Dropped existing collection team successfully ========");
+//            } else {
+//                System.out.println("====== Couldn't delete existing collection team ========");
+//            }
+//        });
+//        mongoClient.createCollection("team", res -> {
+//            if (res.succeeded()) {
+//                System.out.println("=== Successfully created team collection ====");
+//            } else {
+//                System.out.println("==== Unable to create team collection =====");
+//                res.cause().printStackTrace();
+//                future.fail(res.cause());
+//            }
+//        });
         try {
             dbClient = JDBCClient.createShared(
                     vertx,
@@ -118,7 +118,19 @@ public class MainVertical extends AbstractVerticle {
                 future.fail(ar.cause());
             } else {
                 SQLConnection connection = ar.result();
-                connection.execute(MY_SQL_CREATE_PAGES_TABLE, create -> {
+                connection.execute(MY_SQL_CREATE_TEAM_TABLE, create -> {
+                    if (create.failed()) {
+                        System.out.println("Database preparation error" + create.cause());
+                        future.fail(create.cause());
+                    }
+                });
+                connection.execute(MY_SQL_CREATE_TASK_TABLE, create -> {
+                    if (create.failed()) {
+                        System.out.println("Database preparation error" + create.cause());
+                        future.fail(create.cause());
+                    }
+                });
+                connection.execute(MY_SQL_CREATE_TEAM_USER_MAPPING_TABLE, create -> {
                     connection.close();
                     if (create.failed()) {
                         System.out.println("Database preparation error" + create.cause());
@@ -136,12 +148,7 @@ public class MainVertical extends AbstractVerticle {
         Future<Void> future = Future.future();
         HttpServer server = vertx.createHttpServer();
         Router router = Router.router(vertx);
-        router.get("/").handler(this::indexHandler);
-        router.get("/wiki/:page").handler(this::pageRenderingHandler);
-        router.post().handler(BodyHandler.create());
-        router.post("/save").handler(this::pageUpdateHandler);
-        router.post("/create").handler(this::pageCreateHandler);
-        router.post("/delete").handler(this::pageDeletionHandler);
+        router.get("/dashboard").handler(this::dashboardHandler);
         server.requestHandler(router::accept)
                 .listen(8080, ar -> {
                     if (ar.succeeded()) {
@@ -154,6 +161,63 @@ public class MainVertical extends AbstractVerticle {
                 });
         return future;
     }
+
+    private void dashboardHandler(RoutingContext context) {
+        String userId = context.request().getParam("userId");
+        dbClient.getConnection(car -> {
+            if (car.succeeded()) {
+                SQLConnection connection = car.result();
+                connection.query("select user", res -> {
+                    if (res.succeeded()) {
+                        List<String> pages = res.result()
+                                .getResults()
+                                .stream()
+                                .map(json -> json.getString(0))
+                                .sorted()
+                                .collect(Collectors.toList());
+                        context.put("title", "Wiki home");
+                        context.put("pages", pages);
+                        templateEngine.render(context, "templates", "/index.ftl", ar -> {
+                            if (ar.succeeded()) {
+                                context.response().putHeader("Content-Type", "text/html");
+                                context.response().end(ar.result());
+                            } else {
+                                context.fail(ar.cause());
+                            }
+                        });
+                    } else {
+                        context.fail(res.cause());
+                    }
+                });
+            } else {
+                context.fail(car.cause());
+            }
+        });
+    }
+
+
+//    private Future<Void> startHttpServer() {
+//        Future<Void> future = Future.future();
+//        HttpServer server = vertx.createHttpServer();
+//        Router router = Router.router(vertx);
+//        router.get("/").handler(this::indexHandler);
+//        router.get("/wiki/:page").handler(this::pageRenderingHandler);
+//        router.post().handler(BodyHandler.create());
+//        router.post("/save").handler(this::pageUpdateHandler);
+//        router.post("/create").handler(this::pageCreateHandler);
+//        router.post("/delete").handler(this::pageDeletionHandler);
+//        server.requestHandler(router::accept)
+//                .listen(8080, ar -> {
+//                    if (ar.succeeded()) {
+//                        System.out.println("HTTP server running on port 8080");
+//                        future.complete();
+//                    } else {
+//                        System.out.println("Could not start a HTTP server" + ar.cause());
+//                        future.fail(ar.cause());
+//                    }
+//                });
+//        return future;
+//    }
 
     private void indexHandler(RoutingContext context) {
         dbClient.getConnection(car -> {
