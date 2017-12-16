@@ -1,9 +1,14 @@
 package com.example.VO;
 
+import io.vertx.core.json.JsonObject;
+
 public class TeamVO {
 
-    int id;
-    String name;
-    int adminId;
+    public int id;
+    public String name;
+    public int adminId;
 
+    public TeamVO(JsonObject object){
+
+    }
 }

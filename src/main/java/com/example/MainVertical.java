@@ -1,5 +1,7 @@
 package com.example;
 
+import com.example.VO.TeamVO;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.github.rjeschke.txtmark.Processor;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -19,6 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +31,6 @@ import java.util.stream.Collectors;
  */
 public class MainVertical extends AbstractVerticle {
 
-    private static final String MY_SQL_CREATE_PAGES_TABLE = "create table pages(id MEDIUMINT(5) AUTO_INCREMENT, name VARCHAR(20), content VARCHAR(200), PRIMARY KEY (id))";
     private static final String MY_SQL_GET_PAGE = "select id, content from pages where name = ?";
     private static final String MY_SQL_CREATE_PAGE = "insert into pages values (NULL, ?, ?)";
     private static final String MY_SQL_SAVE_PAGE = "update pages set content = ? where id = ?";
@@ -167,17 +169,37 @@ public class MainVertical extends AbstractVerticle {
         dbClient.getConnection(car -> {
             if (car.succeeded()) {
                 SQLConnection connection = car.result();
-                connection.query("select user", res -> {
+                connection.query("select teamId from teamusermapping where userId = "+userId, res -> {
                     if (res.succeeded()) {
-                        List<String> pages = res.result()
+                        List<Integer> teamIds = res.result()
                                 .getResults()
                                 .stream()
-                                .map(json -> json.getString(0))
+                                .map(json -> json.getInteger(0))
                                 .sorted()
                                 .collect(Collectors.toList());
-                        context.put("title", "Wiki home");
-                        context.put("pages", pages);
-                        templateEngine.render(context, "templates", "/index.ftl", ar -> {
+                        List<TeamVO> teamVOList = new ArrayList<TeamVO>();
+                        List<TeamVO> owningTeamList = new ArrayList<TeamVO>();
+                        connection.query("select * from team where adminId = "+userId, response -> {
+                            if (response.succeeded()){
+                                for (JsonObject object : response.result().getRows()){
+                                    TeamVO teamVO = new TeamVO(object);
+                                    teamVOList.add(teamVO);
+                                }
+                            }
+                        });
+                        for (Integer teamId: teamIds){
+                            connection.query("select * from team where id = "+teamId, res1 -> {
+                                if (res1.succeeded()){
+                                    JsonObject object = res1.result().toJson();
+                                    TeamVO teamVO = new TeamVO(object);
+                                    teamVOList.add(teamVO);
+                                }
+                            });
+                        }
+                        context.put("username", "UserName");
+                        context.put("memberTeamList", teamVOList);
+                        context.put("owningTeamList", owningTeamList);
+                        templateEngine.render(context, "templates", "/dashboard.ftl", ar -> {
                             if (ar.succeeded()) {
                                 context.response().putHeader("Content-Type", "text/html");
                                 context.response().end(ar.result());
