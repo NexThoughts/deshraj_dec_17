@@ -22,6 +22,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,7 +53,6 @@ public class MainVertical extends AbstractVerticle {
         Future<Void> steps = prepareDatabase().compose(v -> startHttpServer());
         steps.setHandler(startFuture.completer());
     }
-
 
 
     private Future<Void> prepareDatabase() {
@@ -151,6 +151,8 @@ public class MainVertical extends AbstractVerticle {
         HttpServer server = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.get("/dashboard").handler(this::dashboardHandler);
+        router.post("/team/create").handler(this::createTeamHandler);
+        router.post("/team/save").handler(this::saveTeamHandler);
         server.requestHandler(router::accept)
                 .listen(8080, ar -> {
                     if (ar.succeeded()) {
@@ -164,12 +166,102 @@ public class MainVertical extends AbstractVerticle {
         return future;
     }
 
+    private void createTeamHandler(RoutingContext context) {
+        String userId = context.request().getParam("userId");
+        context.put("username", "UserName");
+        context.put("userId", userId);
+        templateEngine.render(context, "templates", "/createTeam.ftl", ar -> {
+            if (ar.succeeded()) {
+                context.response().putHeader("Content-Type", "text/html");
+                context.response().end(ar.result());
+            } else {
+                context.fail(ar.cause());
+            }
+        });
+    }
+
+    private void saveTeamHandler(RoutingContext context) {
+        String userId = context.request().getParam("userId");
+        String teamName = context.request().getParam("teamName");
+        String users = context.request().getParam("users");
+        List<String> userList = new ArrayList<String>();
+        if (users != null && users.length() > 0) {
+            userList = Arrays.asList(users.split(","));
+        }
+        List<Integer> userIdList = new ArrayList<Integer>();
+        dbClient.getConnection(car -> {
+            if (car.succeeded()) {
+                SQLConnection connection = car.result();
+                String sql = "insert into team values (NULL, ?, ?)";
+                JsonArray params = new JsonArray();
+                params.add(teamName).add(userId);
+                connection.updateWithParams(sql, params, res -> {
+                    connection.close();
+                    if (res.succeeded()) {
+                        System.out.println("team created successfully");
+                    }
+                });
+            }
+        });
+        if (userList.size() > 0){
+            for (String userName : userList){
+                dbClient.getConnection(car -> {
+                    if (car.succeeded()) {
+                        SQLConnection connection = car.result();
+                        connection.query("select * from user where username = " + userName, res -> {
+                            if (res.succeeded()) {
+                                JsonObject object = res.result().toJson();
+                                Integer memberUserId = object.getInteger("id");
+                                userIdList.add(memberUserId);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+        if (userList.size() > 0){
+            dbClient.getConnection(car -> {
+                if (car.succeeded()) {
+                    SQLConnection connection = car.result();
+                    String sql = "select * from team where name = ? and adminId = ?";
+                    JsonArray params = new JsonArray();
+                    params.add(teamName).add(userId);
+                    connection.queryWithParams(sql, params, res -> {
+                        if (res.succeeded()) {
+                            JsonObject object = res.result().toJson();
+                            Integer teamId = object.getInteger("id");
+                            for (Integer memberId : userIdList) {
+                                JsonArray param = new JsonArray();
+                                params.add(teamId).add(memberId);
+                                connection.updateWithParams("insert into teamusermapping values (? , ?)", param, response -> {
+                                    if (response.succeeded()) {
+                                        System.out.println("created team user mapping successfully");
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        context.put("username", "UserName");
+        context.put("userId", userId);
+        templateEngine.render(context, "templates", "/createTeam.ftl", ar -> {
+            if (ar.succeeded()) {
+                context.response().putHeader("Content-Type", "text/html");
+                context.response().end(ar.result());
+            } else {
+                context.fail(ar.cause());
+            }
+        });
+    }
+
     private void dashboardHandler(RoutingContext context) {
         String userId = context.request().getParam("userId");
         dbClient.getConnection(car -> {
             if (car.succeeded()) {
                 SQLConnection connection = car.result();
-                connection.query("select teamId from teamusermapping where userId = "+userId, res -> {
+                connection.query("select teamId from teamusermapping where userId = " + userId, res -> {
                     if (res.succeeded()) {
                         List<Integer> teamIds = res.result()
                                 .getResults()
@@ -179,17 +271,17 @@ public class MainVertical extends AbstractVerticle {
                                 .collect(Collectors.toList());
                         List<TeamVO> teamVOList = new ArrayList<TeamVO>();
                         List<TeamVO> owningTeamList = new ArrayList<TeamVO>();
-                        connection.query("select * from team where adminId = "+userId, response -> {
-                            if (response.succeeded()){
-                                for (JsonObject object : response.result().getRows()){
+                        connection.query("select * from team where adminId = " + userId, response -> {
+                            if (response.succeeded()) {
+                                for (JsonObject object : response.result().getRows()) {
                                     TeamVO teamVO = new TeamVO(object);
                                     teamVOList.add(teamVO);
                                 }
                             }
                         });
-                        for (Integer teamId: teamIds){
-                            connection.query("select * from team where id = "+teamId, res1 -> {
-                                if (res1.succeeded()){
+                        for (Integer teamId : teamIds) {
+                            connection.query("select * from team where id = " + teamId, res1 -> {
+                                if (res1.succeeded()) {
                                     JsonObject object = res1.result().toJson();
                                     TeamVO teamVO = new TeamVO(object);
                                     teamVOList.add(teamVO);
