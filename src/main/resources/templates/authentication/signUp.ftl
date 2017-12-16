@@ -1,18 +1,33 @@
 <#include "*/header.ftl">
-<div class="wrapper">
-    <form action="" method="post" name="Login_Form" class="form-signin">
-        <h3 class="form-signin-heading">Welcome Back! Please Sign In</h3>
-        <hr class="colorgraph">
-        <br>
-
-        <input type="text" class="form-control" name="Username" placeholder="Username" required="" autofocus=""/>
-        <input type="password" class="form-control" name="Password" placeholder="Password" required=""/>
-
-        <div>
-            <button class="btn btn-lg btn-primary btn-block" name="Reset" value="Rest" type="Submit">Reset</button>
-            <button class="btn btn-lg btn-primary btn-block" name="Submit" value="Login" type="Submit">Login</button>
+<section>
+    <div class="container">
+        <div class="row text-center">
+            <h2 class="title" style="opacity: 0;margin-top: 45px">Sign Up</h2>
         </div>
+        <div class="row text-center" style="margin-top: 50px;margin-left:200px;">
+            <div class="contact-form col-md-6 col-sm-12 col-xs-12 col-md-offset-3">
+                <form class="form" method="POST">
+                    <label class="sr-only" for="name">Name</label>
+                    <input id="name" name="name" type="text" class="form-control" placeholder="Name:" required/>
 
-    </form>
-</div>
+                    <label class="sr-only" for="email">Email</label>
+                    <input id="email" name="email" type="email" class="form-control" placeholder="Email:"
+                           required>
+
+                    <label class="sr-only" for="password">Password</label>
+                    <input id="password" type="password" name="password" class="form-control" placeholder="Password :"
+                           required>
+
+                    <label class="sr-only" for="confirmPassword">Password</label>
+                    <input id="confirmPassword" type="password" name="confirmPassword" class="form-control"
+                           placeholder="Confirm Password :"
+                           required>
+
+                    <button type="submit" class="btn btn-lg btn-theme">SignUp</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
 <#include "*/footer.ftl">
