@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/iovertx-3720/"
+    }
+}
+sourceCompatibility = '1.8'
+mainClassName = 'io.vertx.core.Launcher'
+
+
+
+version = '1.0'
+
+
+dependencies {
+    compile group: 'io.vertx', name: 'vertx-web', version: '3.5.0'
+    compile group: 'io.vertx', name: 'vertx-web-templ-freemarker', version: '3.5.0'
+    compile group: 'com.github.rjeschke', name: 'txtmark', version: '0.13'
+    compile group: 'io.vertx', name: 'vertx-jdbc-client', version: '3.5.0'
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version: '2.3.4'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.13'
+    compile group: 'io.vertx', name: 'vertx-auth-jdbc', version: '3.5.0'
+    compile 'io.vertx:vertx-mail-client:3.5.0'
+    compile 'io.vertx:vertx-mongo-client:3.5.0'
+
+}
+
+shadowJar {
+    classifier = 'fat'
+    manifest {
+        attributes 'Main-Verticle': 'com.example.MainVertical'
+    }
+    mergeServiceFiles {
+        include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.0'
+}
