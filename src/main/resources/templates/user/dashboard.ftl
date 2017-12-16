@@ -41,7 +41,7 @@
         <h2>Members of Team:</h2>
         <ul>
             <#items as teamList1>
-                <li><a href="/wiki/${page}">${teamList1}</a></li>
+                <li><a href="/wiki/${teamList1}">${teamList1}</a></li>
             </#items>
         </ul>
     <#else>
@@ -56,7 +56,7 @@
         <h2>Owner Of Teams:</h2>
         <ul>
             <#items as teamList2>
-                <li><a href="/wiki/${page}">${teamList2}</a></li>
+                <li><a href="/wiki/${teamList2}">${teamList2}</a></li>
             </#items>
         </ul>
     <#else>
