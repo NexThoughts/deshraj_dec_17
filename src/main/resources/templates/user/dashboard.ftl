@@ -38,7 +38,7 @@
 <div class="row">
     <div class="col-md-5 mt-1">
     <#list context.pages>
-        <h2>Members of Team:</h2>
+        <h2>Member of Teams:</h2>
         <ul>
             <#items as teamList1>
                 <li><a href="/wiki/${teamList1}">${teamList1}</a></li>
