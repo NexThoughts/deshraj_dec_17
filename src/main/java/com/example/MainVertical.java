@@ -1,24 +1,18 @@
 package com.example;
 
 import com.example.VO.TeamVO;
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.github.rjeschke.txtmark.Processor;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.jdbc.JDBCAuth;
 import io.vertx.ext.jdbc.JDBCClient;
-import io.vertx.ext.mail.MailClient;
-import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
 import java.util.ArrayList;
@@ -153,6 +147,8 @@ public class MainVertical extends AbstractVerticle {
         router.get("/dashboard").handler(this::dashboardHandler);
         router.get("/team/create").handler(this::createTeamHandler);
         router.post("/team/save").handler(this::saveTeamHandler);
+        router.get("/task/create").handler(this::createTaskHandler);
+        router.post("/task/save").handler(this::saveTaskHandler);
         server.requestHandler(router::accept)
                 .listen(8080, ar -> {
                     if (ar.succeeded()) {
@@ -203,8 +199,8 @@ public class MainVertical extends AbstractVerticle {
                 });
             }
         });
-        if (userList.size() > 0){
-            for (String userName : userList){
+        if (userList.size() > 0) {
+            for (String userName : userList) {
                 dbClient.getConnection(car -> {
                     if (car.succeeded()) {
                         SQLConnection connection = car.result();
@@ -219,7 +215,7 @@ public class MainVertical extends AbstractVerticle {
                 });
             }
         }
-        if (userList.size() > 0){
+        if (userList.size() > 0) {
             dbClient.getConnection(car -> {
                 if (car.succeeded()) {
                     SQLConnection connection = car.result();
@@ -247,6 +243,54 @@ public class MainVertical extends AbstractVerticle {
         context.put("username", "UserName");
         context.put("userId", userId);
         templateEngine.render(context, "templates", "/createTeam.ftl", ar -> {
+            if (ar.succeeded()) {
+                context.response().putHeader("Content-Type", "text/html");
+                context.response().end(ar.result());
+            } else {
+                context.fail(ar.cause());
+            }
+        });
+    }
+
+
+    private void createTaskHandler(RoutingContext context) {
+        String teamId = context.request().getParam("teamId");
+        context.put("taskname", "TaskName");
+        context.put("teamId", teamId);
+        templateEngine.render(context, "templates", "/createTask.ftl", ar -> {
+            if (ar.succeeded()) {
+                context.response().putHeader("Content-Type", "text/html");
+                context.response().end(ar.result());
+            } else {
+                context.fail(ar.cause());
+            }
+        });
+    }
+
+
+    private void saveTaskHandler(RoutingContext context) {
+        String teamId = context.request().getParam("teamId");
+        String taskName = context.request().getParam("taskName");
+        String description = context.request().getParam("description");
+        String assignee = context.request().getParam("userName");
+        String dueDate = context.request().getParam("dueDate");
+        dbClient.getConnection(car -> {
+            if (car.succeeded()) {
+                SQLConnection connection = car.result();
+                String sql = "insert into task values (NULL, ?, ?)";
+                JsonArray params = new JsonArray();
+                params.add(taskName).add(description).add(dueDate).add(assignee).add(teamId);
+                connection.updateWithParams(sql, params, res -> {
+                    connection.close();
+                    if (res.succeeded()) {
+                        System.out.println("Task created successfully");
+                    }
+                });
+            }
+        });
+        context.put("taskName", "TaskName");
+        context.put("teamId", teamId);
+        templateEngine.render(context, "templates", "/createTask.ftl", ar -> {
             if (ar.succeeded()) {
                 context.response().putHeader("Content-Type", "text/html");
                 context.response().end(ar.result());
