@@ -151,7 +151,7 @@ public class MainVertical extends AbstractVerticle {
         HttpServer server = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.get("/dashboard").handler(this::dashboardHandler);
-        router.post("/team/create").handler(this::createTeamHandler);
+        router.get("/team/create").handler(this::createTeamHandler);
         router.post("/team/save").handler(this::saveTeamHandler);
         server.requestHandler(router::accept)
                 .listen(8080, ar -> {
