@@ -103,7 +103,7 @@ public class MainVertical extends AbstractVerticle {
             dbClient = JDBCClient.createShared(
                     vertx,
                     new JsonObject()
-                            .put("host", "jdbc:mysql://localhost:3306/demo_vertx?autoreconnect=true")
+                            .put("url", "jdbc:mysql://localhost:3306/demo_vertx?autoreconnect=true")
                             .put("user", "root")
                             .put("password", "nextdefault")
                             .put("driver_class", "com.mysql.jdbc.Driver")
