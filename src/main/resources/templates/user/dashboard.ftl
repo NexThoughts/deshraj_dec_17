@@ -81,4 +81,3 @@
 </div>
 
 <#include "*/footer.ftl">
-
